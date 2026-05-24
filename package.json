@@ -1,0 +1,11 @@
+{
+  "name": "triathlon-training-pwa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/local-server.mjs",
+    "serve": "node scripts/local-server.mjs",
+    "test": "node scripts/verify-static.mjs"
+  }
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Triathlon Trainingsplan">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <path d="M92 321c58-63 121-63 188 0 48 45 94 45 140 0" fill="none" stroke="#22d3ee" stroke-width="34" stroke-linecap="round"/>
+  <path d="M140 212h166c42 0 76 34 76 76" fill="none" stroke="#14b8a6" stroke-width="34" stroke-linecap="round"/>
+  <circle cx="142" cy="357" r="38" fill="none" stroke="#f8fafc" stroke-width="26"/>
+  <circle cx="365" cy="357" r="38" fill="none" stroke="#f8fafc" stroke-width="26"/>
+  <path d="M224 133l54 54-69 42" fill="none" stroke="#facc15" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
