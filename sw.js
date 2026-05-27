@@ -2,8 +2,8 @@ const CACHE_NAME = "triathlon-training-v2";
 const CORE_ASSETS = [
   "/",
   "/index.html",
-  "/styles.css",
-  "/app.js",
+  "/styles.css?v=20260527-power",
+  "/app.js?v=20260527-power",
   "/manifest.webmanifest",
   "/icons/app-icon.svg"
 ];
