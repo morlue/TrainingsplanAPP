@@ -76,6 +76,9 @@ for (const day of plan) {
     if (!Array.isArray(session.steps) || session.steps.length === 0) {
       throw new Error(`Session has no steps: ${session.id}`);
     }
+    if (["Bike", "Brick", "Race"].includes(session.discipline) && !session.power) {
+      throw new Error(`Bike-related session has no power target: ${session.id}`);
+    }
   }
 }
 

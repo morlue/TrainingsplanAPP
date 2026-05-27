@@ -1,6 +1,7 @@
 const STORAGE_KEY = "triathlon-pwa-state-v1";
 const PLAN_START = "2026-05-25";
 const PLAN_END = "2026-06-21";
+const BIKE_FTP_WATTS = 243;
 
 const raceChecklist = [
   "Startzeit, Check-in und Wechselzonen-Oeffnung pruefen",
@@ -73,16 +74,17 @@ const PLAN = [
       duration: 90,
       intensity: "Schwelle kontrolliert",
       rpe: "7",
+      power: "Intervalle 225-245 W, locker 125-165 W",
       steps: [
-        step("Einrollen", "20 min", "locker, hohe Trittfrequenz"),
-        step("Intervall 1", "8 min", "RPE 7/10, stabiler Druck"),
+        step("Einrollen", "20 min", "125-165 W, hohe Trittfrequenz"),
+        step("Intervall 1", "8 min", "225-245 W, RPE 7/10, stabiler Druck"),
         step("Erholung", "5 min", "sehr locker"),
-        step("Intervall 2", "8 min", "gleichmaessig, nicht jagen"),
+        step("Intervall 2", "8 min", "225-245 W, gleichmaessig, nicht jagen"),
         step("Erholung", "5 min", "sehr locker"),
-        step("Intervall 3", "8 min", "sauber zu Ende fahren"),
-        step("Ausfahren", "20-30 min", "locker")
+        step("Intervall 3", "8 min", "225-245 W, sauber zu Ende fahren"),
+        step("Ausfahren", "20-30 min", "125-160 W")
       ],
-      alternatives: ["Bei Muedigkeit: 60 min locker rollen und Intervalle streichen."]
+      alternatives: ["Bei Muedigkeit: 60 min bei 125-160 W locker rollen und Intervalle streichen."]
     })
   ]),
   day("2026-05-28", "Controlled Build", "Laufgruppe als kontrollierter Qualitaetsreiz.", [
@@ -111,10 +113,11 @@ const PLAN = [
       duration: 150,
       intensity: "Locker aerob",
       rpe: "3-4",
+      power: "meist 130-175 W, Anstiege kurz bis 190 W ok",
       optional: true,
       steps: [
-        step("Gruppenausfahrt", "60-80 km", "ruhig mitfahren"),
-        step("Pacing-Regel", "durchgehend", "keine Attacken, keine Zusatzintervalle")
+        step("Gruppenausfahrt", "60-80 km", "meist 130-175 W"),
+        step("Pacing-Regel", "durchgehend", "keine Attacken, keine Zusatzintervalle; kurze Peaks vermeiden")
       ],
       alternatives: ["Bei schwerer Muedigkeit: 45-60 min locker oder frei."]
     })
@@ -164,9 +167,10 @@ const PLAN = [
       duration: 135,
       intensity: "Locker bis steady",
       rpe: "3-5",
+      power: "Bike 130-180 W, Race-Touch maximal 210 W",
       steps: [
-        step("Bike Option A", "75-120 min", "wenn Freitag Uni-Ride gemacht"),
-        step("Bike Option B", "2.5-3 h", "wenn Freitag kein Ride"),
+        step("Bike Option A", "75-120 min", "130-175 W, wenn Freitag Uni-Ride gemacht"),
+        step("Bike Option B", "2.5-3 h", "130-180 W, wenn Freitag kein Ride"),
         step("Koppellauf", "10-15 min", "sehr locker, gute Technik")
       ],
       notes: ["Nicht als Haertetest fahren. Der Lauf ist nur ein Umstellungsreiz."]
@@ -226,11 +230,12 @@ const PLAN = [
       duration: 90,
       intensity: "Race steady",
       rpe: "7-8",
+      power: "3 x 10 min bei 230-250 W, locker 125-165 W",
       steps: [
-        step("Einrollen", "20 min", "locker"),
-        step("3 x 10 min", "RPE 7-8", "5 min locker dazwischen"),
+        step("Einrollen", "20 min", "125-165 W"),
+        step("3 x 10 min", "230-250 W", "5 min locker bei 125-155 W dazwischen"),
         step("4 x 30 s", "hohe Kadenz", "volle Kontrolle, viel Pause"),
-        step("Ausfahren", "15-20 min", "locker")
+        step("Ausfahren", "15-20 min", "125-155 W")
       ],
       notes: ["Auf dem Rennrad eine tiefe, stabile Position ueben."]
     })
@@ -261,9 +266,10 @@ const PLAN = [
       duration: 150,
       intensity: "Locker aerob",
       rpe: "3-4",
+      power: "meist 130-175 W, keine langen Abschnitte ueber 190 W",
       optional: true,
       steps: [
-        step("Gruppenausfahrt", "60-80 km", "locker"),
+        step("Gruppenausfahrt", "60-80 km", "130-175 W"),
         step("Kontrolle", "durchgehend", "nicht hinten raus eskalieren")
       ]
     })
@@ -305,10 +311,11 @@ const PLAN = [
       duration: 130,
       intensity: "Race-specific",
       rpe: "6-8",
+      power: "2 x 12 min bei 230-250 W, restlich 125-175 W",
       steps: [
-        step("Bike locker", "30 min", "einrollen"),
-        step("2 x 12 min", "Sprint-Race-Gefuehl", "6 min locker dazwischen"),
-        step("Bike locker", "20-40 min", "ausfahren"),
+        step("Bike locker", "30 min", "125-165 W einrollen"),
+        step("2 x 12 min", "230-250 W", "6 min locker bei 125-155 W dazwischen"),
+        step("Bike locker", "20-40 min", "125-170 W ausfahren"),
         step("Koppellauf", "15-20 min", "5 min ruhig, 8-10 min zuegig, auslaufen")
       ],
       notes: ["Das ist ein spezifischer Reiz, kein Wettkampf."]
@@ -364,11 +371,12 @@ const PLAN = [
       duration: 85,
       intensity: "RPE 8",
       rpe: "8",
+      power: "4 x 5 min bei 250-270 W, locker 125-160 W",
       steps: [
-        step("Einrollen", "20 min", "locker"),
-        step("4 x 5 min", "RPE 8", "4 min locker dazwischen"),
+        step("Einrollen", "20 min", "125-160 W"),
+        step("4 x 5 min", "250-270 W", "4 min locker bei 125-150 W dazwischen"),
         step("Position", "waehrend Intervalle", "aero-aehnlich auf Rennrad"),
-        step("Ausfahren", "15-20 min", "locker")
+        step("Ausfahren", "15-20 min", "125-155 W")
       ]
     })
   ]),
@@ -396,10 +404,11 @@ const PLAN = [
       duration: 120,
       intensity: "Easy",
       rpe: "2-3",
+      power: "120-160 W, maximal 170 W",
       optional: true,
       steps: [
-        step("Maximal", "60-70 km", "locker"),
-        step("Alternative", "45 min", "sehr locker oder frei")
+        step("Maximal", "60-70 km", "120-160 W locker"),
+        step("Alternative", "45 min", "110-145 W sehr locker oder frei")
       ]
     })
   ]),
@@ -441,9 +450,10 @@ const PLAN = [
       duration: 105,
       intensity: "Locker mit Race-Touch",
       rpe: "4-6",
+      power: "Bike 125-175 W, 3 x 3 min bei 230-250 W",
       steps: [
-        step("Bike", "75-90 min", "locker"),
-        step("3 x 3 min", "Race-Gefuehl", "viel locker dazwischen"),
+        step("Bike", "75-90 min", "125-175 W locker"),
+        step("3 x 3 min", "230-250 W", "viel locker bei 125-150 W dazwischen"),
         step("Koppellauf", "10-15 min", "locker bis zuegig")
       ]
     })
@@ -498,10 +508,11 @@ const PLAN = [
       duration: 65,
       intensity: "Kurz Race-Gefuehl",
       rpe: "5-6",
+      power: "3 x 3 min bei 225-245 W, sonst 110-155 W",
       steps: [
-        step("Einrollen", "20 min", "locker"),
-        step("3 x 3 min", "Race-Gefuehl", "voll kontrolliert"),
-        step("Ausfahren", "25-30 min", "locker"),
+        step("Einrollen", "20 min", "110-150 W locker"),
+        step("3 x 3 min", "225-245 W", "voll kontrolliert"),
+        step("Ausfahren", "25-30 min", "110-150 W locker"),
         step("Material", "5 min", "Position, Reifen, Bremsen, Schaltung checken")
       ]
     })
@@ -531,9 +542,10 @@ const PLAN = [
       duration: 40,
       intensity: "Sehr locker",
       rpe: "1-2",
+      power: "100-145 W oder frei",
       optional: true,
       steps: [
-        step("Option", "30-45 min", "locker rollen"),
+        step("Option", "30-45 min", "100-145 W locker rollen"),
         step("Alternative", "frei", "wenn du dich frischer fuehlst")
       ],
       notes: ["Kein langer Uni-Ride."]
@@ -565,10 +577,11 @@ const PLAN = [
       duration: 75,
       intensity: "Wettkampf",
       rpe: "8-10",
+      power: "Bike vorlaeufig 230-250 W, Peaks vermeiden",
       steps: [
         step("Warm-up", "kurz", "ruhig, fokussiert"),
         step("Swim", "500 m", "aggressiv starten, dann Rhythmus finden"),
-        step("Bike", "20 km", "hart-kontrolliert, keine wilden Peaks"),
+        step("Bike", "20 km", "230-250 W als Startbereich, keine wilden Peaks"),
         step("Run", "5 km", "km 1 kontrolliert, dann bauen"),
         step("Finish", "alles geben", "stark ins Ziel")
       ],
@@ -590,6 +603,7 @@ function session(input) {
     alternatives: [],
     notes: [],
     checklist: [],
+    power: "",
     ...input
   };
 }
@@ -742,7 +756,7 @@ function renderHeader(selectedDate) {
       <div>
         <p class="eyebrow">${escapeHtml(dayItem.phase)}</p>
         <h1>Trainingsplan</h1>
-        <p>${daysToRace === 0 ? "Race Day Muenster" : `${daysToRace} Tage bis Muenster`}</p>
+        <p>${daysToRace === 0 ? "Race Day Muenster" : `${daysToRace} Tage bis Muenster`} · Bike FTP ${BIKE_FTP_WATTS} W</p>
       </div>
       <button class="date-pill" data-action="open-date-strip">${formatDate(selectedDate)}</button>
     </header>
@@ -801,6 +815,7 @@ function renderSessionCard(sessionItem) {
       </div>
       <h3>${escapeHtml(sessionItem.title)}</h3>
       <p>${escapeHtml(sessionItem.intensity)} · RPE ${escapeHtml(sessionItem.rpe)} · ${minutesLabel(sessionItem.duration)}</p>
+      ${sessionItem.power ? `<p class="power-line">${escapeHtml(sessionItem.power)}</p>` : ""}
       ${log.completed ? `<div class="done-label">abgeschlossen · RPE ${escapeHtml(log.rpe || "-")}</div>` : ""}
     </article>
   `;
@@ -919,6 +934,7 @@ function renderDetail(sessionId) {
         </div>
         <h2>${escapeHtml(sessionItem.title)}</h2>
         <p class="detail-meta">${escapeHtml(sessionItem.intensity)} · Ziel-RPE ${escapeHtml(sessionItem.rpe)} · ${minutesLabel(sessionItem.duration)}</p>
+        ${sessionItem.power ? `<div class="power-target"><strong>Wattziel</strong><span>${escapeHtml(sessionItem.power)}</span></div>` : ""}
         <div class="step-list">
           ${sessionItem.steps.map((item) => `
             <div class="step">
