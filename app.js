@@ -726,6 +726,199 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+/* ---- ZWO EXPORT ---- */
+
+function classifyStepType(label) {
+  if (/einrollen|warm.?up|einfahren/i.test(label)) return "warmup";
+  if (/ausfahren|ausrollen|cool.?down|auslaufen/i.test(label)) return "cooldown";
+  if (/intervall\s*\d|interval\s*\d/i.test(label)) return "interval";
+  if (/erholung|recovery|pause/i.test(label)) return "recovery";
+  return "steady";
+}
+
+function buildZwoBlocks(parsed) {
+  const blocks = [];
+  let i = 0;
+  while (i < parsed.length) {
+    const step = parsed[i];
+    if (step.type === "warmup") {
+      blocks.push({ type: "Warmup", duration: step.seconds, powerLow: "0.50", powerHigh: (step.watts / BIKE_FTP_WATTS).toFixed(2) });
+      i++;
+    } else if (step.type === "cooldown") {
+      blocks.push({ type: "Cooldown", duration: step.seconds, powerHigh: (step.watts / BIKE_FTP_WATTS).toFixed(2), powerLow: "0.40" });
+      i++;
+    } else if (step.type === "interval") {
+      const pairs = [];
+      while (i < parsed.length && (parsed[i].type === "interval" || parsed[i].type === "recovery")) {
+        if (parsed[i].type === "interval") {
+          const on = parsed[i];
+          const off = parsed[i + 1] && parsed[i + 1].type === "recovery" ? parsed[i + 1] : null;
+          pairs.push({ on, off });
+          i += off ? 2 : 1;
+        } else {
+          i++;
+        }
+      }
+      if (pairs.length > 0) {
+        blocks.push({
+          type: "IntervalsT",
+          repeat: pairs.length,
+          onDuration: pairs[0].on.seconds,
+          offDuration: pairs[0].off ? pairs[0].off.seconds : 60,
+          onPower: (pairs[0].on.watts / BIKE_FTP_WATTS).toFixed(2),
+          offPower: pairs[0].off ? (pairs[0].off.watts / BIKE_FTP_WATTS).toFixed(2) : "0.50"
+        });
+      }
+    } else {
+      if (step.hasWatts) {
+        blocks.push({ type: "SteadyState", duration: step.seconds, power: (step.watts / BIKE_FTP_WATTS).toFixed(2) });
+      } else {
+        blocks.push({ type: "FreeRide", duration: step.seconds });
+      }
+      i++;
+    }
+  }
+  return blocks;
+}
+
+function generateZwoXml(title, blocks) {
+  const xmlBlocks = blocks.map(b => {
+    if (b.type === "Warmup") return `    <Warmup Duration="${b.duration}" PowerLow="${b.powerLow}" PowerHigh="${b.powerHigh}"/>`;
+    if (b.type === "Cooldown") return `    <Cooldown Duration="${b.duration}" PowerHigh="${b.powerHigh}" PowerLow="${b.powerLow}"/>`;
+    if (b.type === "SteadyState") return `    <SteadyState Duration="${b.duration}" Power="${b.power}"/>`;
+    if (b.type === "IntervalsT") return `    <IntervalsT Repeat="${b.repeat}" OnDuration="${b.onDuration}" OffDuration="${b.offDuration}" OnPower="${b.onPower}" OffPower="${b.offPower}"/>`;
+    if (b.type === "FreeRide") return `    <FreeRide Duration="${b.duration}"/>`;
+    return "";
+  }).filter(Boolean).join("\n");
+  const safeName = String(title || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<workout_file>\n  <name>${safeName}</name>\n  <sportType>bike</sportType>\n  <workout>\n${xmlBlocks}\n  </workout>\n</workout_file>`;
+}
+
+async function shareZwoFile(title, xml) {
+  const filename = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_") + ".zwo";
+  const blob = new Blob([xml], { type: "application/xml" });
+  const file = new File([blob], filename, { type: "application/xml" });
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title }); } catch { /* user cancelled */ }
+  } else {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+}
+
+function exportAsZwo(sessionItem, btn) {
+  const steps = sessionItem.steps || [];
+  const parsed = steps.map(s => ({
+    type: classifyStepType(s.label),
+    seconds: Math.round(parseStepMinutes(s.amount) * 60),
+    watts: parseStepWatts(s.target),
+    hasWatts: /\d+\s*(?:[-–]\s*\d+\s*)?W\b/i.test(s.target)
+  })).filter(s => s.seconds > 0);
+
+  if (parsed.length === 0) {
+    btn.textContent = "Keine exportierbaren Daten";
+    setTimeout(() => { btn.innerHTML = exportBtnInner(); btn.disabled = false; }, 2200);
+    return;
+  }
+
+  btn.classList.add("export-loading");
+  btn.disabled = true;
+  const blocks = buildZwoBlocks(parsed);
+  const xml = generateZwoXml(sessionItem.title, blocks);
+  shareZwoFile(sessionItem.title, xml).finally(() => {
+    btn.classList.remove("export-loading");
+    btn.disabled = false;
+  });
+}
+
+function exportBtnInner() {
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Als Workout exportieren`;
+}
+
+/* ---- END ZWO EXPORT ---- */
+
+function parseStepMinutes(amount) {
+  const rangeMin = amount.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*min/i);
+  if (rangeMin) return (parseFloat(rangeMin[1]) + parseFloat(rangeMin[2])) / 2;
+  const singleMin = amount.match(/(\d+(?:\.\d+)?)\s*min/i);
+  if (singleMin) return parseFloat(singleMin[1]);
+  const rangeH = amount.match(/(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*h/i);
+  if (rangeH) return (parseFloat(rangeH[1]) + parseFloat(rangeH[2])) / 2 * 60;
+  const singleH = amount.match(/(\d+(?:\.\d+)?)\s*h/i);
+  if (singleH) return parseFloat(singleH[1]) * 60;
+  return 0;
+}
+
+function parseStepWatts(target) {
+  const wattRange = target.match(/(\d+)\s*[-–]\s*(\d+)\s*W/i);
+  if (wattRange) return (parseInt(wattRange[1]) + parseInt(wattRange[2])) / 2;
+  const watt = target.match(/(\d+)\s*W/i);
+  if (watt) return parseInt(watt[1]);
+  if (/sehr locker|ausfahren|auslaufen|cool.?down|ruhig/i.test(target)) return 120;
+  if (/locker|easy|leicht/i.test(target)) return 150;
+  if (/moderat|steady|aerob|gleichmaessig/i.test(target)) return 190;
+  if (/rpe\s*7|schwelle|kontrolliert/i.test(target)) return 230;
+  if (/rpe\s*8|hart/i.test(target)) return 265;
+  if (/rpe\s*9|rpe\s*10|max|sprint|alles/i.test(target)) return 310;
+  return 155;
+}
+
+function getZoneColor(watts) {
+  const p = watts / BIKE_FTP_WATTS;
+  if (p < 0.56) return "#2d3748";
+  if (p < 0.76) return "#1d4ed8";
+  if (p < 0.91) return "#15803d";
+  if (p < 1.06) return "#d97706";
+  if (p < 1.21) return "#ea580c";
+  return "#dc2626";
+}
+
+function renderIntervalGraph(sessionItem) {
+  if (!sessionItem.steps || sessionItem.steps.length < 2) return "";
+  const parsed = sessionItem.steps.map(s => ({
+    minutes: parseStepMinutes(s.amount),
+    watts: parseStepWatts(s.target)
+  })).filter(s => s.minutes > 0);
+  if (parsed.length < 2) return "";
+  const totalMinutes = parsed.reduce((sum, s) => sum + s.minutes, 0);
+  const maxWatts = Math.max(...parsed.map(s => s.watts), BIKE_FTP_WATTS);
+  const W = 320, H = 72;
+  let x = 0;
+  const bars = parsed.map(s => {
+    const bw = (s.minutes / totalMinutes) * W;
+    const bh = Math.max(4, (s.watts / maxWatts) * H);
+    const rect = `<rect x="${x.toFixed(1)}" y="${(H - bh).toFixed(1)}" width="${Math.max(1, bw - 1.5).toFixed(1)}" height="${bh.toFixed(1)}" fill="${getZoneColor(s.watts)}" rx="2"/>`;
+    x += bw;
+    return rect;
+  }).join("");
+  const ftpY = (H - (BIKE_FTP_WATTS / maxWatts) * H).toFixed(1);
+  const durationLabel = totalMinutes >= 60
+    ? `${Math.floor(totalMinutes / 60)}h${totalMinutes % 60 > 0 ? ` ${Math.round(totalMinutes % 60)} min` : ""}`
+    : `${Math.round(totalMinutes)} min`;
+  return `
+    <div class="interval-graph">
+      <div class="interval-graph-header">
+        <span class="interval-graph-label">STRUKTUR</span>
+        <span class="interval-graph-duration">${durationLabel}</span>
+      </div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="interval-graph-svg">
+        ${bars}
+        <line x1="0" y1="${ftpY}" x2="${W}" y2="${ftpY}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="4" y="${(parseFloat(ftpY) - 3).toFixed(1)}" fill="rgba(255,255,255,0.28)" font-size="7" font-family="sans-serif">FTP ${BIKE_FTP_WATTS}W</text>
+      </svg>
+      <div class="interval-graph-zones">
+        <span style="color:#1d4ed8">Z2</span>
+        <span style="color:#15803d">Z3</span>
+        <span style="color:#d97706">Z4</span>
+        <span style="color:#ea580c">Z5</span>
+        <span style="color:#dc2626">Z6</span>
+      </div>
+    </div>
+  `;
+}
+
 function render() {
   const selectedDate = getSelectedDate();
   const route = getRoute();
@@ -734,10 +927,9 @@ function render() {
     <div class="shell">
       ${renderHeader(selectedDate)}
       <main class="content">
-        ${route === "plan" ? renderPlan(selectedDate) : ""}
-        ${route === "race" ? renderRace() : ""}
+        ${route === "races" ? renderRaces() : ""}
         ${route === "log" ? renderLog() : ""}
-        ${route === "today" || !["plan", "race", "log"].includes(route) ? renderToday(selectedDate) : ""}
+        ${route === "today" || !["races", "log"].includes(route) ? renderToday(selectedDate) : ""}
       </main>
       ${renderNav(route)}
       <div id="detail-root"></div>
@@ -774,8 +966,7 @@ function renderHeader(selectedDate) {
 function renderNav(route) {
   const items = [
     ["today", "Heute"],
-    ["plan", "Plan"],
-    ["race", "Race"],
+    ["races", "Races"],
     ["log", "Log"]
   ];
   return `
@@ -856,37 +1047,40 @@ function renderPlan(selectedDate) {
   `;
 }
 
-function renderRace() {
-  const raceDay = getDay("2026-06-21");
+function renderRaces() {
+  const today = todayIso();
+  const races = getAllSessions().filter(s => s.discipline === "Race");
   return `
     <section class="section-head">
-      <p class="eyebrow">A-Wettkampf</p>
-      <h2>Muenster Sprint</h2>
-      <p>500 m Kanal-Schwimmen, 20 km no-draft Bike, 5 km Lauf. Ziel: stark, frisch und kontrolliert aggressiv.</p>
+      <p class="eyebrow">Wettkampfkalender</p>
+      <h2>Races</h2>
     </section>
-    <div class="race-grid">
-      <article class="info-card">
-        <h3>Strategie</h3>
-        <ul>
-          <li>Schwimmen: hart starten, dann Rhythmus und Orientierung.</li>
-          <li>Rad: hart-kontrolliert, aeroposition-aehnlich, keine Peaks.</li>
-          <li>Lauf: ersten Kilometer kontrollieren, dann steigern.</li>
-        </ul>
-      </article>
-      <article class="info-card">
-        <h3>Checkliste</h3>
-        ${raceChecklist.map((item, index) => `
-          <label class="check-row">
-            <input type="checkbox" data-check="${index}" ${state.checklist[index] ? "checked" : ""}>
-            <span>${escapeHtml(item)}</span>
-          </label>
-        `).join("")}
-      </article>
-      <article class="info-card">
-        <h3>Race Day Einheit</h3>
-        ${raceDay.sessions.map(renderSessionCard).join("")}
-      </article>
+    <div class="session-list">
+      ${races.length
+        ? races.map(s => renderRaceEventCard(s, today)).join("")
+        : `<div class="empty">Keine Wettkämpfe geplant.</div>`}
     </div>
+  `;
+}
+
+function renderRaceEventCard(sessionItem, today) {
+  const daysUntil = Math.round(
+    (new Date(`${sessionItem.date}T12:00:00`) - new Date(`${today}T12:00:00`)) / 86400000
+  );
+  const log = getSessionLog(sessionItem.id);
+  const countdownText = daysUntil === 0 ? "RACE DAY" : daysUntil < 0 ? "Abgeschlossen" : `${daysUntil} Tage`;
+  const countdownClass = daysUntil === 0 ? "race-today" : daysUntil < 0 ? "race-past" : "";
+  return `
+    <article class="session-card ${log.completed ? "completed" : ""}" data-session="${sessionItem.id}">
+      <div class="session-top">
+        <span class="badge ${disciplineClass(sessionItem.discipline)}">${escapeHtml(sessionItem.discipline)}</span>
+        <span class="race-countdown ${countdownClass}">${countdownText}</span>
+      </div>
+      <h3>${escapeHtml(sessionItem.title)}</h3>
+      <p>${fullDate(sessionItem.date)}</p>
+      <p>${escapeHtml(sessionItem.intensity)} · RPE ${escapeHtml(sessionItem.rpe)} · ${minutesLabel(sessionItem.duration)}</p>
+      ${sessionItem.power ? `<p class="power-line">${escapeHtml(sessionItem.power)}</p>` : ""}
+    </article>
   `;
 }
 
@@ -935,6 +1129,7 @@ function renderDetail(sessionId) {
         <h2>${escapeHtml(sessionItem.title)}</h2>
         <p class="detail-meta">${escapeHtml(sessionItem.intensity)} · Ziel-RPE ${escapeHtml(sessionItem.rpe)} · ${minutesLabel(sessionItem.duration)}</p>
         ${sessionItem.power ? `<div class="power-target"><strong>Wattziel</strong><span>${escapeHtml(sessionItem.power)}</span></div>` : ""}
+        ${renderIntervalGraph(sessionItem)}
         <div class="step-list">
           ${sessionItem.steps.map((item) => `
             <div class="step">
@@ -944,7 +1139,7 @@ function renderDetail(sessionId) {
             </div>
           `).join("")}
         </div>
-        ${sessionItem.notes.length ? `<div class="notes"><h3>Hinweise</h3>${sessionItem.notes.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}</div>` : ""}
+        ${(sessionItem.discipline === "Bike" || sessionItem.discipline === "Brick") ? `<button class="export-button" data-action="export-zwo">${exportBtnInner()}</button>` : ""}
         ${sessionItem.alternatives.length ? `<div class="notes"><h3>Alternative</h3>${sessionItem.alternatives.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}</div>` : ""}
         ${sessionItem.checklist.length ? `<div class="notes"><h3>Checkliste</h3><ul>${sessionItem.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>` : ""}
         <form class="checkin" data-checkin="${sessionItem.id}">
@@ -994,6 +1189,10 @@ function bindEvents() {
 }
 
 function bindDetailEvents() {
+  document.querySelector("[data-action='export-zwo']")?.addEventListener("click", (e) => {
+    const sessionItem = getAllSessions().find(s => s.id === document.querySelector(".checkin").dataset.checkin);
+    if (sessionItem) exportAsZwo(sessionItem, e.currentTarget);
+  });
   document.querySelector("[data-action='close-detail']")?.addEventListener("click", () => {
     document.querySelector("#detail-root").innerHTML = "";
     render();
