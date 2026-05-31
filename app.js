@@ -796,8 +796,8 @@ function generateZwoXml(title, blocks) {
 
 async function shareZwoFile(title, xml) {
   const filename = title.replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_") + ".zwo";
-  const blob = new Blob([xml], { type: "application/xml" });
-  const file = new File([blob], filename, { type: "application/xml" });
+  const blob = new Blob([xml], { type: "application/octet-stream" });
+  const file = new File([blob], filename, { type: "application/octet-stream" });
   if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], title }); } catch { /* user cancelled */ }
   } else {

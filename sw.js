@@ -1,9 +1,9 @@
-const CACHE_NAME = "triathlon-training-v3";
+const CACHE_NAME = "triathlon-training-v4";
 const CORE_ASSETS = [
   "/",
   "/index.html",
-  "/styles.css?v=20260531-zwo",
-  "/app.js?v=20260531-zwo",
+  "/styles.css?v=20260531-zwo2",
+  "/app.js?v=20260531-zwo2",
   "/manifest.webmanifest",
   "/icons/app-icon.svg"
 ];
