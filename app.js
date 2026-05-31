@@ -1139,8 +1139,7 @@ function renderDetail(sessionId) {
             </div>
           `).join("")}
         </div>
-        ${(sessionItem.discipline === "Bike" || sessionItem.discipline === "Brick") ? `<button class="export-button" data-action="export-zwo">${exportBtnInner()}</button>` : ""}
-        ${sessionItem.alternatives.length ? `<div class="notes"><h3>Alternative</h3>${sessionItem.alternatives.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}</div>` : ""}
+${sessionItem.alternatives.length ? `<div class="notes"><h3>Alternative</h3>${sessionItem.alternatives.map((note) => `<p>${escapeHtml(note)}</p>`).join("")}</div>` : ""}
         ${sessionItem.checklist.length ? `<div class="notes"><h3>Checkliste</h3><ul>${sessionItem.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul></div>` : ""}
         <form class="checkin" data-checkin="${sessionItem.id}">
           <h3>Check-in</h3>
